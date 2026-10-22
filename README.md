@@ -1,0 +1,2 @@
+# MusicWidgets
+floating-music-widget
