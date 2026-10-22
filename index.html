@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Demo — Floating Music Widget</title>
+  <style>
+    body { margin: 0; font: 16px/1.7 system-ui, sans-serif; background: #f3f1ee; color: #222; }
+    header { position: sticky; top: 0; padding: 16px 24px; background: #fff; border-bottom: 1px solid #ddd; font-weight: 600; z-index: 10; }
+    main { max-width: 640px; margin: 0 auto; padding: 32px 24px 160px; }
+    p { margin: 0 0 1.2em; }
+    footer { padding: 24px; text-align: center; background: #222; color: #bbb; }
+  </style>
+</head>
+<body>
+  <header>Website contoh (header tetap utuh)</header>
+  <main>
+    <h1>Demo Floating Music Widget</h1>
+    <p>Scroll halaman ini: widget tetap di pojok kanan bawah dan musik tidak terputus. Coba tombol Play/Pause, Minimize (musik lanjut), dan Close (musik berhenti, muncul ikon kecil).</p>
+    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
+    <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
+    <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
+    <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+  </main>
+  <footer>Footer website contoh</footer>
+
+  <!-- Cukup satu baris ini untuk memasang widget -->
+  <script src="./music-player.js"
+          data-src="./demo-track.mp3"
+          data-title="Demo Track"
+          data-artist="Generated sample"
+          data-accent="#ffb27a"
+          defer></script>
+</body>
+</html>
