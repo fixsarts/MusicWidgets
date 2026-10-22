@@ -42,7 +42,6 @@
     offsetY: null,
     zIndex: null,
     width: null,                // lebar card, default 300px
-    accent: '#0bd4f4',          // warna aksen (format CSS apa pun)
     volume: 0.35,               // 0 - 1
     autoplay: true,
     loop: true,
@@ -101,14 +100,14 @@
 
     var user = window.FMWConfig;
     if (user && typeof user === 'object') {
-      for (k in user) { if (k !== 'labels') { c[k] = user[k]; } }
+      for (k in user) { if (k !== 'labels' && k !== 'accent') { c[k] = user[k]; } }
     }
     c.labels = {};
     for (k in DEFAULTS.labels) { c.labels[k] = DEFAULTS.labels[k]; }
     if (user && user.labels) { for (k in user.labels) { c.labels[k] = user.labels[k]; } }
 
     var d = (scriptEl && scriptEl.dataset) || {};
-    var textKeys = ['src', 'title', 'artist', 'cover', 'position', 'accent', 'initialState',
+    var textKeys = ['src', 'title', 'artist', 'cover', 'position', 'initialState',
       'mobileState', 'closeBehavior', 'remember', 'css', 'preload', 'offsetX', 'offsetY', 'zIndex', 'width'];
     textKeys.forEach(function (key) {
       if (d[key] !== undefined && d[key] !== '') { c[key] = d[key]; }
@@ -137,10 +136,6 @@
   }
 
   var cfg = buildConfig();
-  var hasAccentOverride = !!(
-    (scriptEl && scriptEl.dataset.accent) ||
-    (window.FMWConfig && Object.prototype.hasOwnProperty.call(window.FMWConfig, 'accent'))
-  );
 
   if (!cfg.src) {
     console.error('[FMW] Atribut data-src (URL musik) belum diisi. Widget tidak dibuat.');
@@ -354,17 +349,11 @@
     titleEl.title = cfg.title;
     applyCover(cfg.cover);
 
-    /* ---------- Tema & posisi ---------- */
+    /* ---------- Kontras & posisi ---------- */
     document.body.appendChild(root);
-    var accent = cfg.accent;
-    if (hasAccentOverride) {
-      root.style.setProperty('--fmw-accent', accent);
-    } else {
-      accent = getComputedStyle(root).getPropertyValue('--fmw-accent').trim() || accent;
-    }
+    var accent = getComputedStyle(root).getPropertyValue('--fmw-accent').trim();
     var rgb = resolveRGB(accent);
     if (rgb) {
-      root.style.setProperty('--fmw-accent-rgb', rgb.join(', '));
       var lum = (0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]) / 255;
       root.style.setProperty('--fmw-ink', lum > 0.55 ? '#17141f' : '#ffffff');
     }

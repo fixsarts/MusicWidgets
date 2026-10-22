@@ -64,6 +64,8 @@ Kalau ingin CSS lewat `<link>` sendiri (misalnya untuk preload), matikan auto-lo
 
 Tips:
 - Pin ke tag (`@v1.0.0`) supaya website lain tidak ikut berubah saat kamu update. `@main` di-cache lama oleh CDN.
+- Setelah mengubah tampilan di file master, upload **`music-player.js` dan `music-player.css`** bersama-sama ke repository hosting. Jika memakai URL bertag seperti `@v1.0.0`, buat tag versi baru (mis. `@v1.0.1`) lalu ubah URL JavaScript dan CSS di website pemasang ke tag yang sama. Website yang memakai salinan lama tidak otomatis mengambil perubahan master.
+- Warna aksen hanya diatur dari `--fmw-accent` di `music-player.css`. Setelah mengubahnya, unggah `music-player.css` terbaru ke URL yang digunakan semua website.
 - File lagu bisa ikut di repo yang sama (jsDelivr maks. 50 MB per file), atau di hosting lain selama URL-nya langsung ke file `.mp3`/`.ogg`/`.m4a`.
 
 ## Konfigurasi
@@ -77,7 +79,6 @@ Ada dua cara, dan data-attribute menang atas `window.FMWConfig`.
   data-src="lagu.mp3"
   data-title="Judul" data-artist="Artis"
   data-position="bottom-left"
-  data-accent="#7dd3fc"
   data-volume="0.4"
   data-close-behavior="remove"
   defer></script>
@@ -91,7 +92,6 @@ Ada dua cara, dan data-attribute menang atas `window.FMWConfig`.
     src: 'lagu.mp3',
     title: 'Judul',
     artist: 'Artis',
-    accent: '#7dd3fc',
     labels: { play: 'Play', pause: 'Pause' }   // ganti teks/bahasa
   };
 </script>
@@ -105,7 +105,6 @@ Ada dua cara, dan data-attribute menang atas `window.FMWConfig`.
 | `cover` | kosong | URL gambar sampul (opsional) |
 | `position` | `bottom-right` | `bottom-right`, `bottom-left`, `top-right`, `top-left` |
 | `offset-x` / `offset-y` | `20` | Jarak dari tepi (angka = px, atau `"1.5rem"`) |
-| `accent` | `#0bd4f4` | Warna aksen untuk tombol, slider, glow, dan indikator; format CSS apa pun. Jika tidak diisi, warna di bagian Pengaturan warna pada `music-player.css` yang digunakan |
 | `volume` | `0.35` | Volume awal 0–1 |
 | `autoplay` | `true` | Coba putar otomatis saat dimuat |
 | `loop` | `true` | Ulangi lagu |
@@ -121,7 +120,7 @@ Ada dua cara, dan data-attribute menang atas `window.FMWConfig`.
 
 ### Warna & gaya
 
-Untuk mengubah warna default, edit bagian **Pengaturan warna** di awal `music-player.css`. Cukup ubah `--fmw-accent` untuk mengganti warna aksen; warna glow dan kontras tombol akan disesuaikan otomatis. Kamu juga bisa mengubah warna permukaan widget melalui `--fmw-glass-start`, `--fmw-glass-end`, `--fmw-cover-start`, dan `--fmw-cover-end`. Atribut `data-accent` atau opsi `accent` di `window.FMWConfig` akan menimpa warna aksen CSS tersebut.
+Untuk mengubah warna, edit **hanya** `--fmw-accent` di bagian **Pengaturan warna** pada awal `music-player.css`. Tombol, slider, equalizer, glow, dan warna kontras tombol mengambil warna dari token ini; warna efek transparan dihitung otomatis. JavaScript tidak memiliki warna aksen terpisah dan konfigurasi `data-accent`/`FMWConfig.accent` tidak digunakan. Untuk semua website mengikuti warna master, unggah CSS ini ke URL publik yang sama. Kamu juga bisa mengubah warna permukaan widget melalui `--fmw-glass-start`, `--fmw-glass-end`, `--fmw-cover-start`, dan `--fmw-cover-end`.
 
 Variabel posisi juga bisa di-override dari stylesheet website:
 

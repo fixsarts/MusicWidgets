@@ -6,7 +6,6 @@
 /* ---------- Pengaturan warna (ubah warna widget di bagian ini) ---------- */
 .fmw-root {
   --fmw-accent: #6a79ff;
-  --fmw-accent-rgb: 11, 212, 244;
   --fmw-ink: #17141f;
   --fmw-text: #f6f3fb;
   --fmw-muted: rgba(246, 243, 251, 0.62);
@@ -157,11 +156,11 @@
   border-radius: 14px;
   overflow: hidden;
   background:
-    radial-gradient(circle at 28% 22%, rgba(var(--fmw-accent-rgb), 0.75), rgba(var(--fmw-accent-rgb), 0) 62%),
+    radial-gradient(circle at 28% 22%, color-mix(in srgb, var(--fmw-accent) 75%, transparent), color-mix(in srgb, var(--fmw-accent) 0%, transparent) 62%),
     linear-gradient(160deg, var(--fmw-cover-start), var(--fmw-cover-end));
   background-size: cover;
   background-position: center;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 0 0 rgba(var(--fmw-accent-rgb), 0);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 0 0 color-mix(in srgb, var(--fmw-accent) 0%, transparent);
   transition: box-shadow 0.6s ease;
 }
 .fmw-cover::after {
@@ -172,7 +171,7 @@
 }
 .fmw-cover > .fmw-eq { position: relative; z-index: 1; }
 .fmw-root[data-playing="true"] .fmw-cover {
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16), 0 0 22px rgba(var(--fmw-accent-rgb), 0.4);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16), 0 0 22px color-mix(in srgb, var(--fmw-accent) 40%, transparent);
 }
 
 .fmw-meta { flex: 1; min-width: 0; }
@@ -204,7 +203,7 @@
 }
 .fmw-root[data-playing="true"] .fmw-dot {
   background: var(--fmw-accent);
-  box-shadow: 0 0 8px rgba(var(--fmw-accent-rgb), 0.85);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--fmw-accent) 85%, transparent);
 }
 .fmw-root[data-status="blocked"] .fmw-subtext { color: var(--fmw-accent); }
 .fmw-root[data-status="error"] .fmw-subtext { color: #ff9b9b; }
@@ -257,9 +256,9 @@
   height: 42px;
   color: var(--fmw-ink);
   background: var(--fmw-accent);
-  box-shadow: 0 6px 18px -4px rgba(var(--fmw-accent-rgb), 0.6);
+  box-shadow: 0 6px 18px -4px color-mix(in srgb, var(--fmw-accent) 60%, transparent);
 }
-.fmw-root .fmw-play:hover { transform: scale(1.07); box-shadow: 0 8px 22px -4px rgba(var(--fmw-accent-rgb), 0.75); }
+.fmw-root .fmw-play:hover { transform: scale(1.07); box-shadow: 0 8px 22px -4px color-mix(in srgb, var(--fmw-accent) 75%, transparent); }
 .fmw-root .fmw-play:active { transform: scale(0.94); }
 .fmw-mini .fmw-play { width: 36px; height: 36px; }
 
@@ -284,11 +283,11 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  box-shadow: 0 0 0 0 rgba(var(--fmw-accent-rgb), 0.6);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--fmw-accent) 60%, transparent);
   animation: fmw-ring 1.8s ease-out infinite;
   pointer-events: none;
 }
-@keyframes fmw-ring { to { box-shadow: 0 0 0 15px rgba(var(--fmw-accent-rgb), 0); } }
+@keyframes fmw-ring { to { box-shadow: 0 0 0 15px color-mix(in srgb, var(--fmw-accent) 0%, transparent); } }
 
 /* ---------- Equalizer ---------- */
 .fmw-eq { display: flex; align-items: center; gap: 3px; height: 18px; }
