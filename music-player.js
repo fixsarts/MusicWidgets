@@ -11,7 +11,7 @@
   'use strict';
 
   // Cegah widget dibuat dua kali kalau script ter-load berulang
-  if (window.__FMW_LOADED__ || document.getElementById('fmw-root')) { return; }
+  if (window.__FMW_LOADED__ || document.getElementById('fmw-host')) { return; }
   window.__FMW_LOADED__ = true;
 
   var VERSION = '1.0.0';
@@ -174,7 +174,10 @@
    * ------------------------------------------------------------------ */
   function resolveCssUrl() {
     var css = String(cfg.css || 'auto');
-    if (/^(none|false)$/i.test(css)) { return null; }
+    if (/^(none|false)$/i.test(css)) {
+      var manualLink = document.querySelector('link[data-fmw-css], link[rel~="stylesheet"][href*="music-player.css"]');
+      return manualLink ? manualLink.href : null;
+    }
     if (css !== 'auto') { return css; }
     if (scriptEl && scriptEl.src) {
       try {
@@ -187,34 +190,22 @@
     return null;
   }
 
-  function ensureCss(done) {
+  function ensureCss(scope, done) {
     var href = resolveCssUrl();
     if (!href) { done(true); return; }
 
-    var finished = false;
-    var timer;
-    function finish(ok) {
-      if (finished) { return; }
-      finished = true;
-      clearTimeout(timer);
-      done(ok);
-    }
-
-    var link = document.querySelector('link[data-fmw-css], link[rel~="stylesheet"][href*="music-player.css"]');
-    if (link && link.sheet) { finish(true); return; }
-    if (!link) {
-      link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = href;
-      link.setAttribute('data-fmw-css', '');
-      document.head.appendChild(link);
-    }
-    link.addEventListener('load', function () { finish(true); });
+    var link = scope.querySelector('link[data-fmw-css]');
+    if (link && link.sheet) { done(true); return; }
+    link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = href;
+    link.setAttribute('data-fmw-css', '');
+    link.addEventListener('load', function () { done(true); }, { once: true });
     link.addEventListener('error', function () {
       console.error('[FMW] Gagal memuat stylesheet: ' + href + ' (atau set data-css="none" jika CSS dipasang manual).');
-      finish(false);
-    });
-    timer = setTimeout(function () { finish(true); }, 4000);
+      done(false);
+    }, { once: true });
+    scope.appendChild(link);
   }
 
   function onReady(fn) {
@@ -223,10 +214,7 @@
     } else { fn(); }
   }
 
-  ensureCss(function (ok) {
-    if (!ok) { window.__FMW_LOADED__ = false; return; }
-    onReady(init);
-  });
+  onReady(init);
 
   /* ------------------------------------------------------------------ *
    * Util
@@ -268,15 +256,42 @@
    * Inisialisasi
    * ------------------------------------------------------------------ */
   function init() {
-    if (document.getElementById('fmw-root')) { window.__FMW_LOADED__ = true; return; }
+    if (document.getElementById('fmw-host')) { window.__FMW_LOADED__ = true; return; }
 
-    var L = cfg.labels;
     var prefs = loadPrefs();
     if (prefs.state === 'removed') { return; } // pengunjung pernah menutup total
 
     var isSmall = !!(window.matchMedia && window.matchMedia('(max-width: 480px)').matches);
     var start = (isSmall && cfg.mobileState) ? cfg.mobileState : cfg.initialState;
     if (prefs.state === 'min' || prefs.state === 'closed' || prefs.state === 'open') { start = prefs.state; }
+
+    if (!document.body || !document.createElement('div').attachShadow) {
+      console.error('[FMW] Browser ini tidak mendukung Shadow DOM; widget tidak dibuat.');
+      window.__FMW_LOADED__ = false;
+      return;
+    }
+    var host = document.createElement('div');
+    host.id = 'fmw-host';
+    host.style.setProperty('all', 'initial', 'important');
+    host.style.setProperty('position', 'fixed', 'important');
+    host.style.setProperty('inset', '0', 'important');
+    host.style.setProperty('z-index', cfg.zIndex === null ? '2147483000' : String(cfg.zIndex), 'important');
+    host.style.setProperty('pointer-events', 'none', 'important');
+    document.body.appendChild(host);
+    var shadowRoot = host.attachShadow({ mode: 'closed' });
+
+    ensureCss(shadowRoot, function (ok) {
+      if (!ok) {
+        if (host.parentNode) { host.parentNode.removeChild(host); }
+        window.__FMW_LOADED__ = false;
+        return;
+      }
+      buildWidget(start, prefs, shadowRoot, host);
+    });
+  }
+
+  function buildWidget(start, prefs, shadowRoot, host) {
+    var L = cfg.labels;
 
     /* ---------- DOM ---------- */
     var root = document.createElement('div');
@@ -350,7 +365,7 @@
     applyCover(cfg.cover);
 
     /* ---------- Kontras & posisi ---------- */
-    document.body.appendChild(root);
+    shadowRoot.appendChild(root);
     var accent = getComputedStyle(root).getPropertyValue('--fmw-accent').trim();
     var rgb = resolveRGB(accent);
     if (rgb) {
@@ -508,7 +523,7 @@
       timers.forEach(clearTimeout);
       try { audio.pause(); audio.removeAttribute('src'); audio.load(); } catch (e) { /* abaikan */ }
       clearMediaSession();
-      if (root.parentNode) { root.parentNode.removeChild(root); }
+      if (host.parentNode) { host.parentNode.removeChild(host); }
       delete window.FloatingMusicWidget;
       window.__FMW_LOADED__ = false;
     }

@@ -5,7 +5,7 @@ Pemutar musik mengambang (pojok layar) dengan gaya dark glassmorphism. HTML/CSS/
 - Slide-in halus, equalizer animasi, progress & volume
 - **Play/Pause**, **Minimize** (musik lanjut), **Close** (musik berhenti + ikon kecil untuk membuka lagi)
 - Autoplay dicoba sekali; kalau diblokir browser, widget siap dengan tombol Play (tanpa trik bypass)
-- Semua class/ID berawalan `fmw-` → aman dari bentrok CSS/JS website lain
+- Tampilan diisolasi dengan **closed Shadow DOM**; CSS website pemasang tidak bisa meng-override warna maupun gaya widget
 - Tidak mengubah layout website; satu instance saja walau script ter-load dua kali
 - Mendukung desktop & mobile, `prefers-reduced-motion`, navigasi keyboard, dan Media Session (kontrol lock-screen)
 
@@ -35,7 +35,7 @@ Ganti `USERNAME`, `REPO`, dan URL lagu. CSS dimuat otomatis dari folder yang sam
 
 ### Versi "Link Rel" (CSS dipasang manual)
 
-Kalau ingin CSS lewat `<link>` sendiri (misalnya untuk preload), matikan auto-load dengan `data-css="none"`:
+Kalau ingin memuat CSS lewat `<link>` sendiri (misalnya untuk preload), widget akan memakai URL link `music-player.css` tersebut di dalam Shadow DOM. Tambahkan `data-css="none"` agar widget mendeteksi link manual:
 
 ```html
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
@@ -122,11 +122,7 @@ Ada dua cara, dan data-attribute menang atas `window.FMWConfig`.
 
 Untuk mengubah warna, edit **hanya** `--fmw-accent` di bagian **Pengaturan warna** pada awal `music-player.css`. Tombol, slider, equalizer, glow, dan warna kontras tombol mengambil warna dari token ini; warna efek transparan dihitung otomatis. JavaScript tidak memiliki warna aksen terpisah dan konfigurasi `data-accent`/`FMWConfig.accent` tidak digunakan. Untuk semua website mengikuti warna master, unggah CSS ini ke URL publik yang sama. Kamu juga bisa mengubah warna permukaan widget melalui `--fmw-glass-start`, `--fmw-glass-end`, `--fmw-cover-start`, dan `--fmw-cover-end`.
 
-Variabel posisi juga bisa di-override dari stylesheet website:
-
-```css
-#fmw-root { --fmw-w: 320px; --fmw-oy: 90px; /* naikkan agar tidak menutupi tombol chat */ }
-```
+CSS widget dimuat **di dalam Shadow DOM tertutup**, jadi selector atau deklarasi `!important` dari stylesheet website tidak dapat menimpa warna/gaya widget. Untuk mengubah warna atau desain, edit `music-player.css` milik widget; jangan menambahkan override CSS dari halaman pemasang. Posisi dan ukuran tetap dapat diatur melalui opsi `data-position`, `data-offset-x`, `data-offset-y`, `data-width`, dan `data-z-index`.
 
 ## Perilaku tombol
 

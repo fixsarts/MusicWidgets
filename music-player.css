@@ -1,6 +1,6 @@
 /*!
  * Floating Music Widget v1.0.0 — music-player.css
- * Semua selector memakai prefix "fmw-" agar tidak bentrok dengan CSS website lain.
+ * Stylesheet ini dimuat di Shadow DOM agar CSS website tidak mengubah tampilan widget.
  */
 
 /* ---------- Pengaturan warna (ubah warna widget di bagian ini) ---------- */
