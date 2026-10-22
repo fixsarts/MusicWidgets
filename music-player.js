@@ -42,7 +42,7 @@
     offsetY: null,
     zIndex: null,
     width: null,                // lebar card, default 300px
-    accent: '#ffb27a',          // warna aksen (format CSS apa pun)
+    accent: '#0bd4f4',          // warna aksen (format CSS apa pun)
     volume: 0.35,               // 0 - 1
     autoplay: true,
     loop: true,
@@ -137,6 +137,10 @@
   }
 
   var cfg = buildConfig();
+  var hasAccentOverride = !!(
+    (scriptEl && scriptEl.dataset.accent) ||
+    (window.FMWConfig && Object.prototype.hasOwnProperty.call(window.FMWConfig, 'accent'))
+  );
 
   if (!cfg.src) {
     console.error('[FMW] Atribut data-src (URL musik) belum diisi. Widget tidak dibuat.');
@@ -351,8 +355,14 @@
     applyCover(cfg.cover);
 
     /* ---------- Tema & posisi ---------- */
-    root.style.setProperty('--fmw-accent', cfg.accent);
-    var rgb = resolveRGB(cfg.accent);
+    document.body.appendChild(root);
+    var accent = cfg.accent;
+    if (hasAccentOverride) {
+      root.style.setProperty('--fmw-accent', accent);
+    } else {
+      accent = getComputedStyle(root).getPropertyValue('--fmw-accent').trim() || accent;
+    }
+    var rgb = resolveRGB(accent);
     if (rgb) {
       root.style.setProperty('--fmw-accent-rgb', rgb.join(', '));
       var lum = (0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]) / 255;
@@ -622,7 +632,6 @@
     renderTime();
     renderVolume();
     renderSub();
-    document.body.appendChild(root);
 
     // Tampil dengan animasi slide-in (setelah style awal terbaca browser)
     var shown = false;

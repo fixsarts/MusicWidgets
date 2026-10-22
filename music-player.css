@@ -3,13 +3,19 @@
  * Semua selector memakai prefix "fmw-" agar tidak bentrok dengan CSS website lain.
  */
 
-/* ---------- Root & design tokens ---------- */
+/* ---------- Pengaturan warna (ubah warna widget di bagian ini) ---------- */
 .fmw-root {
-  --fmw-accent: #ffb27a;
-  --fmw-accent-rgb: 255, 178, 122;
+  --fmw-accent: #6a79ff;
+  --fmw-accent-rgb: 11, 212, 244;
   --fmw-ink: #17141f;
   --fmw-text: #f6f3fb;
   --fmw-muted: rgba(246, 243, 251, 0.62);
+  --fmw-glass-start: rgba(42, 37, 58, 0.58);
+  --fmw-glass-end: rgba(16, 15, 25, 0.72);
+  --fmw-cover-start: rgb(3, 3, 37);
+  --fmw-cover-end: #15131f;
+
+  /* ---------- Pengaturan posisi & animasi (biasanya tidak perlu diubah) ---------- */
   --fmw-ox: 20px;
   --fmw-oy: 20px;
   --fmw-z: 2147483000;
@@ -71,7 +77,7 @@
 
 /* ---------- Glass surface ---------- */
 .fmw-root .fmw-glass {
-  background: linear-gradient(155deg, rgba(42, 37, 58, 0.58), rgba(16, 15, 25, 0.72));
+  background: linear-gradient(155deg, var(--fmw-glass-start), var(--fmw-glass-end));
   -webkit-backdrop-filter: blur(20px) saturate(170%);
   backdrop-filter: blur(20px) saturate(170%);
   border: 1px solid rgba(255, 255, 255, 0.13);
@@ -81,7 +87,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .fmw-root .fmw-glass { background: rgba(24, 22, 34, 0.95); }
+  .fmw-root .fmw-glass { background: var(--fmw-glass-end); }
 }
 
 /* ---------- Tiga "wajah" widget: card / mini / launcher ---------- */
@@ -152,7 +158,7 @@
   overflow: hidden;
   background:
     radial-gradient(circle at 28% 22%, rgba(var(--fmw-accent-rgb), 0.75), rgba(var(--fmw-accent-rgb), 0) 62%),
-    linear-gradient(160deg, #2b2640, #15131f);
+    linear-gradient(160deg, var(--fmw-cover-start), var(--fmw-cover-end));
   background-size: cover;
   background-position: center;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 0 0 rgba(var(--fmw-accent-rgb), 0);
@@ -285,28 +291,53 @@
 @keyframes fmw-ring { to { box-shadow: 0 0 0 15px rgba(var(--fmw-accent-rgb), 0); } }
 
 /* ---------- Equalizer ---------- */
-.fmw-eq { display: flex; align-items: flex-end; gap: 3px; height: 18px; }
+.fmw-eq { display: flex; align-items: center; gap: 3px; height: 18px; }
 .fmw-eq i {
   display: block;
   width: 3px;
   height: 100%;
   border-radius: 2px;
   background: var(--fmw-accent);
-  transform-origin: 50% 100%;
+  transform-origin: center;
   transform: scaleY(0.2);
   transition: transform 0.45s var(--fmw-ease);
 }
-.fmw-root[data-playing="true"] .fmw-eq i { animation: fmw-eq 1s ease-in-out infinite; }
-.fmw-eq i:nth-child(1) { animation-duration: 0.95s; animation-delay: -0.30s; }
-.fmw-eq i:nth-child(2) { animation-duration: 0.75s; animation-delay: -0.55s; }
-.fmw-eq i:nth-child(3) { animation-duration: 1.10s; animation-delay: -0.10s; }
-.fmw-eq i:nth-child(4) { animation-duration: 0.85s; animation-delay: -0.70s; }
-.fmw-eq i:nth-child(5) { animation-duration: 1.00s; animation-delay: -0.40s; }
-@keyframes fmw-eq {
+.fmw-eq i:nth-child(2), .fmw-eq i:nth-child(4) { transform: scaleY(0.5); }
+.fmw-eq i:nth-child(3) { transform: scaleY(0.85); }
+.fmw-root[data-playing="true"] .fmw-eq i:nth-child(1) { animation: fmw-eq-1 0.82s ease-in-out -0.24s infinite; }
+.fmw-root[data-playing="true"] .fmw-eq i:nth-child(2) { animation: fmw-eq-2 0.67s ease-in-out -0.51s infinite; }
+.fmw-root[data-playing="true"] .fmw-eq i:nth-child(3) { animation: fmw-eq-3 0.94s ease-in-out -0.13s infinite; }
+.fmw-root[data-playing="true"] .fmw-eq i:nth-child(4) { animation: fmw-eq-4 0.73s ease-in-out -0.39s infinite; }
+.fmw-root[data-playing="true"] .fmw-eq i:nth-child(5) { animation: fmw-eq-5 0.88s ease-in-out -0.62s infinite; }
+@keyframes fmw-eq-1 {
   0%, 100% { transform: scaleY(0.2); }
-  20% { transform: scaleY(1); }
-  45% { transform: scaleY(0.4); }
-  70% { transform: scaleY(0.85); }
+  24% { transform: scaleY(0.62); }
+  51% { transform: scaleY(0.3); }
+  76% { transform: scaleY(0.85); }
+}
+@keyframes fmw-eq-2 {
+  0%, 100% { transform: scaleY(0.42); }
+  19% { transform: scaleY(0.95); }
+  47% { transform: scaleY(0.25); }
+  71% { transform: scaleY(0.68); }
+}
+@keyframes fmw-eq-3 {
+  0%, 100% { transform: scaleY(0.75); }
+  27% { transform: scaleY(0.36); }
+  54% { transform: scaleY(1); }
+  79% { transform: scaleY(0.48); }
+}
+@keyframes fmw-eq-4 {
+  0%, 100% { transform: scaleY(0.32); }
+  22% { transform: scaleY(0.78); }
+  49% { transform: scaleY(0.5); }
+  73% { transform: scaleY(1); }
+}
+@keyframes fmw-eq-5 {
+  0%, 100% { transform: scaleY(0.25); }
+  17% { transform: scaleY(0.72); }
+  43% { transform: scaleY(0.4); }
+  69% { transform: scaleY(0.92); }
 }
 .fmw-mini .fmw-eq { height: 16px; margin: 0 6px 0 4px; }
 

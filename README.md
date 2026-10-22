@@ -105,7 +105,7 @@ Ada dua cara, dan data-attribute menang atas `window.FMWConfig`.
 | `cover` | kosong | URL gambar sampul (opsional) |
 | `position` | `bottom-right` | `bottom-right`, `bottom-left`, `top-right`, `top-left` |
 | `offset-x` / `offset-y` | `20` | Jarak dari tepi (angka = px, atau `"1.5rem"`) |
-| `accent` | `#ffb27a` | Warna aksen, format CSS apa pun |
+| `accent` | `#0bd4f4` | Warna aksen untuk tombol, slider, glow, dan indikator; format CSS apa pun. Jika tidak diisi, warna di bagian Pengaturan warna pada `music-player.css` yang digunakan |
 | `volume` | `0.35` | Volume awal 0–1 |
 | `autoplay` | `true` | Coba putar otomatis saat dimuat |
 | `loop` | `true` | Ulangi lagu |
@@ -121,7 +121,9 @@ Ada dua cara, dan data-attribute menang atas `window.FMWConfig`.
 
 ### Warna & gaya
 
-Selain `accent`, kamu bisa override variabel CSS dari stylesheet website:
+Untuk mengubah warna default, edit bagian **Pengaturan warna** di awal `music-player.css`. Cukup ubah `--fmw-accent` untuk mengganti warna aksen; warna glow dan kontras tombol akan disesuaikan otomatis. Kamu juga bisa mengubah warna permukaan widget melalui `--fmw-glass-start`, `--fmw-glass-end`, `--fmw-cover-start`, dan `--fmw-cover-end`. Atribut `data-accent` atau opsi `accent` di `window.FMWConfig` akan menimpa warna aksen CSS tersebut.
+
+Variabel posisi juga bisa di-override dari stylesheet website:
 
 ```css
 #fmw-root { --fmw-w: 320px; --fmw-oy: 90px; /* naikkan agar tidak menutupi tombol chat */ }
