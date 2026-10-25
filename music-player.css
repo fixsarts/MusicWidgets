@@ -26,7 +26,9 @@
   --fmw-sy: 1;
   --fmw-tx: 100%;
   --fmw-ty: 100%;
-  --fmw-away: translate3d(calc(var(--fmw-sx) * 28px), calc(var(--fmw-sy) * 28px), 0) scale(0.94);
+  /* Hidden faces only move up/down. Moving them sideways pushed them outside the screen,
+     and iPhone Safari then made the page wider (ball cut off, page shifting). */
+  --fmw-away: translate3d(0, calc(var(--fmw-sy) * 24px), 0) scale(0.94);
 
   position: fixed;
   z-index: var(--fmw-z);
@@ -390,7 +392,7 @@
 
 /* ---------- Layar kecil ---------- */
 @media (max-width: 480px) {
-  .fmw-root { --fmw-ox: 12px; --fmw-oy: 12px; }
+  .fmw-root { --fmw-ox: 18px; --fmw-oy: 22px; }
   .fmw-root .fmw-vol .fmw-range { width: 44px; }
 }
 @media (max-width: 340px) {
