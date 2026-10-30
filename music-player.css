@@ -1,5 +1,5 @@
 /*!
- * Floating Music Widget v1.0.0 — music-player.css
+ * Floating Music Widget v1.1.0 — music-player.css
  * Stylesheet ini dimuat di Shadow DOM agar CSS website tidak mengubah tampilan widget.
  */
 
@@ -30,10 +30,13 @@
      and iPhone Safari then made the page wider (ball cut off, page shifting). */
   --fmw-away: translate3d(0, calc(var(--fmw-sy) * 24px), 0) scale(0.94);
 
-  position: fixed;
+  /* Host (#fmw-host) sudah position:fixed + inset:0, jadi widget cukup absolute di dalamnya.
+     Lebar memakai % host (bukan 100vw): 100vw di iOS Safari bisa lebih lebar dari layar. */
+  position: absolute;
   z-index: var(--fmw-z);
   display: grid;
-  width: min(var(--fmw-w), calc(100vw - var(--fmw-ox) * 2));
+  grid-template-columns: minmax(0, 1fr); /* kolom tidak boleh melebar karena judul panjang */
+  width: min(var(--fmw-w), calc(100% - var(--fmw-ox) * 2 - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
   pointer-events: none;
   box-sizing: border-box;
   color: var(--fmw-text);
@@ -65,7 +68,7 @@
   text-align: inherit;
 }
 
-.fmw-root > * { grid-area: 1 / 1; pointer-events: auto; }
+.fmw-root > * { grid-area: 1 / 1; min-width: 0; pointer-events: auto; }
 
 .fmw-sr {
   position: absolute !important;
@@ -213,9 +216,8 @@
 
 .fmw-actions { display: flex; gap: 2px; align-self: flex-start; margin: -4px -4px 0 0; }
 
-/* ---------- Card: baris bawah ---------- */
-.fmw-bottom { display: flex; align-items: center; gap: 10px; }
-.fmw-prog { flex: 1; min-width: 0; }
+/* ---------- Card: progress + kontrol ---------- */
+.fmw-prog { min-width: 0; }
 .fmw-times {
   display: flex;
   justify-content: space-between;
@@ -223,9 +225,22 @@
   color: var(--fmw-muted);
   font-variant-numeric: tabular-nums;
 }
+.fmw-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+}
+.fmw-main { display: flex; align-items: center; gap: 6px; }
+.fmw-side { display: flex; align-items: center; min-width: 0; }
+.fmw-side-l { justify-content: flex-start; }
+.fmw-side-r { justify-content: flex-end; }
 .fmw-vol { display: flex; align-items: center; gap: 2px; margin-right: -4px; }
-.fmw-root .fmw-vol .fmw-range { width: 50px; }
-.fmw-root[data-novol="true"] .fmw-vol { display: none; }
+.fmw-root .fmw-vol .fmw-range { width: 44px; }
+/* iOS tidak mengizinkan JS mengatur volume: sembunyikan slider, tombol mute tetap tampil */
+.fmw-root[data-novol="true"] .fmw-vol .fmw-range { display: none; }
+/* Satu lagu saja: tombol prev / next / ulangi disembunyikan */
+.fmw-root[data-multi="false"] .fmw-multi-only { display: none; }
 
 /* ---------- Tombol ---------- */
 .fmw-root .fmw-btn {
@@ -252,6 +267,16 @@
 .fmw-root .fmw-ico:active { transform: scale(0.9); }
 .fmw-root .fmw-ico svg { width: 15px; height: 15px; }
 .fmw-root .fmw-ico[data-fmw="close"]:hover { color: #ffb0b0; background: rgba(255, 90, 90, 0.2); }
+
+.fmw-root .fmw-skip { width: 34px; height: 34px; color: var(--fmw-text); }
+.fmw-root .fmw-skip svg { width: 18px; height: 18px; }
+
+/* Tombol ulangi: panah biasa = putar berurutan, panah bertanda "1" (aksen) = ulangi lagu ini */
+.fmw-root .fmw-repeat svg { grid-area: 1 / 1; transition: opacity 0.2s ease, transform 0.3s var(--fmw-ease); }
+.fmw-repeat .fmw-i-rone { opacity: 0; transform: scale(0.6); }
+.fmw-root[data-repeat="one"] .fmw-repeat { color: var(--fmw-accent); background: color-mix(in srgb, var(--fmw-accent) 18%, transparent); }
+.fmw-root[data-repeat="one"] .fmw-repeat .fmw-i-rall { opacity: 0; transform: scale(0.6); }
+.fmw-root[data-repeat="one"] .fmw-repeat .fmw-i-rone { opacity: 1; transform: none; }
 
 .fmw-root .fmw-play {
   width: 42px;
@@ -393,10 +418,16 @@
 /* ---------- Layar kecil ---------- */
 @media (max-width: 480px) {
   .fmw-root { --fmw-ox: 18px; --fmw-oy: 22px; }
-  .fmw-root .fmw-vol .fmw-range { width: 44px; }
+  .fmw-root .fmw-vol .fmw-range { width: 40px; }
 }
 @media (max-width: 340px) {
   .fmw-root .fmw-vol .fmw-range { display: none; }
+}
+/* Layar sentuh: target tap lebih besar */
+@media (pointer: coarse) {
+  .fmw-root .fmw-ico { width: 34px; height: 34px; }
+  .fmw-root .fmw-skip { width: 38px; height: 38px; }
+  .fmw-actions { margin: -6px -6px 0 0; }
 }
 
 /* ---------- Hormati prefers-reduced-motion ---------- */

@@ -3,6 +3,7 @@
 Pemutar musik mengambang (pojok layar) dengan gaya dark glassmorphism. HTML/CSS/JS murni, tanpa framework, dan bisa dipasang di website mana pun hanya dengan **satu tag `<script>`**.
 
 - Slide-in halus, equalizer animasi, progress & volume
+- **Playlist**: tombol **Next / Prev** dan tombol **Ulangi** (putar berurutan ↔ ulangi lagu ini). Ingat lagu & mode terakhir selama sesi
 - **Play/Pause**, **Minimize** (musik lanjut), **Close** (musik berhenti + ikon kecil untuk membuka lagi)
 - Autoplay dicoba sekali; kalau diblokir browser, widget siap dengan tombol Play (tanpa trik bypass)
 - Tampilan diisolasi dengan **closed Shadow DOM**; CSS website pemasang tidak bisa meng-override warna maupun gaya widget
@@ -16,22 +17,43 @@ Pemutar musik mengambang (pojok layar) dengan gaya dark glassmorphism. HTML/CSS/
 | `music-player.js` | Logika widget. Memuat `music-player.css` otomatis |
 | `music-player.css` | Tampilan & animasi |
 | `index.html` | Halaman demo untuk uji lokal |
+| `Assets/Musik/*.mp3` | Playlist bawaan (3 lagu) |
 | `demo-track.mp3` | Lagu contoh buatan sendiri (bebas dipakai) |
 
 ## Pasang di website (paling mudah)
 
-Tempel sebelum `</body>` (atau di `<head>` dengan `defer`):
+Tempel sebelum `</body>` di website mana pun. **Satu baris saja**; ketiga lagu di `Assets/Musik` ikut otomatis:
+
+```html
+<script src="https://cdn.jsdelivr.net/gh/fixsarts/MusicWidgets@main/music-player.js" defer></script>
+```
+
+> **Kenapa portable?** Path relatif (mis. `Assets/Musik/lagu.mp3`) dibaca **relatif terhadap lokasi `music-player.js`**, bukan terhadap website yang memasang. Dulu `data-src="./Assets/Musik/…"` dicari di server website pemasang, sehingga tampilan muncul tapi musik tidak terbaca. Ubah acuannya dengan `data-base="page"` bila memang ingin relatif ke halaman.
+
+### Satu lagu saja (tanpa tombol Next/Prev/Ulangi)
 
 ```html
 <script
-  src="https://cdn.jsdelivr.net/gh/USERNAME/REPO@v1.0.0/music-player.js"
-  data-src="https://situsmu.com/musik/lagu.mp3"
-  data-title="Judul Lagu"
-  data-artist="Nama Artis"
+  src="https://cdn.jsdelivr.net/gh/fixsarts/MusicWidgets@main/music-player.js"
+  data-src="Assets/Musik/Game%20of%20Thrones.mp3"
+  data-title="Game of Thrones"
+  data-artist="Game Of Thrones"
   defer></script>
 ```
 
-Ganti `USERNAME`, `REPO`, dan URL lagu. CSS dimuat otomatis dari folder yang sama dengan JS.
+### Playlist sendiri
+
+```html
+<script
+  src="https://cdn.jsdelivr.net/gh/fixsarts/MusicWidgets@main/music-player.js"
+  data-tracks='[
+    {"src":"Assets/Musik/Game of Thrones.mp3","title":"GoT","artist":"Game Of Thrones"},
+    {"src":"https://situsku.com/lagu.mp3","title":"Lagu lain"}
+  ]'
+  defer></script>
+```
+
+Atau lewat `window.FMWConfig = { tracks: [...] }` sebelum script. Playlist bawaan (kalau tidak mengisi `data-src`/`data-tracks`) diatur di konstanta `DEFAULT_TRACKS` pada `music-player.js`.
 
 ### Versi "Link Rel" (CSS dipasang manual)
 
@@ -100,14 +122,17 @@ Ada dua cara, dan data-attribute menang atas `window.FMWConfig`.
 
 | Opsi (`data-…`) | Default | Keterangan |
 |---|---|---|
-| `src` | **wajib** | URL file audio |
+| `src` | kosong | Satu lagu. Jika kosong dan `tracks` kosong, dipakai playlist bawaan |
+| `tracks` | playlist bawaan | JSON array `[{src,title,artist,cover}]` (lewat `data-tracks`) |
+| `repeat` | `all` | `all` = putar berurutan, `one` = ulangi lagu ini |
+| `base` | `script` | Acuan path relatif: `script`, `page`, atau URL |
 | `title` / `artist` | `Untitled` / kosong | Judul & nama artis |
 | `cover` | kosong | URL gambar sampul (opsional) |
 | `position` | `bottom-right` | `bottom-right`, `bottom-left`, `top-right`, `top-left` |
 | `offset-x` / `offset-y` | `20` | Jarak dari tepi (angka = px, atau `"1.5rem"`) |
 | `volume` | `0.35` | Volume awal 0–1 |
 | `autoplay` | `true` | Coba putar otomatis saat dimuat |
-| `loop` | `true` | Ulangi lagu |
+| `loop` | `true` | Ulangi lagu (hanya mode 1 lagu; pada playlist pakai tombol Ulangi) |
 | `initial-state` | `open` | `open`, `minimized`, atau `closed` |
 | `mobile-state` | sama dgn `initial-state` | State awal khusus layar ≤ 480px |
 | `close-behavior` | `launcher` | `launcher` = tampil ikon musik kecil; `remove` = widget dihapus total |
@@ -131,6 +156,8 @@ CSS widget dimuat **di dalam Shadow DOM tertutup**, jadi selector atau deklarasi
 | ▶ / ❚❚ | Putar / jeda lagu |
 | − (Minimize) | Card mengecil jadi pill; **musik tetap jalan** |
 | ⤢ (di pill) | Perbesar kembali |
+| ⏮ / ⏭ | Lagu sebelumnya (jika sudah >3 detik: ulang dari awal) / lagu berikutnya |
+| 🔁 Ulangi | Ketuk untuk **ulangi lagu ini** (ikon bertanda 1, warna aksen). Ketuk lagi untuk putar berurutan (setelah lagu terakhir kembali ke lagu pertama) |
 | × (Close) | Widget hilang dengan animasi, **musik berhenti** dan posisi di-reset. Ikon musik kecil muncul untuk membuka lagi (atau widget dihapus bila `close-behavior="remove"`) |
 
 ## Autoplay
@@ -142,6 +169,10 @@ Browser modern umumnya memblokir audio bersuara sebelum pengunjung berinteraksi 
 ```js
 FloatingMusicWidget.play();
 FloatingMusicWidget.pause();
+FloatingMusicWidget.next();
+FloatingMusicWidget.prev();
+FloatingMusicWidget.goTo(2);          // pindah ke lagu ke-3
+FloatingMusicWidget.setRepeat('one'); // 'one' | 'all'
 FloatingMusicWidget.minimize();
 FloatingMusicWidget.expand();
 FloatingMusicWidget.close();   // berhenti + tutup
@@ -164,11 +195,12 @@ python3 -m http.server 8000
 
 | Gejala | Penyebab / solusi |
 |---|---|
+| Tampilan ada tapi musik "gagal dimuat" | Path lagu salah. Path relatif dibaca dari lokasi `music-player.js`; pastikan file ada di `Assets/Musik/` di samping script, atau pakai URL penuh |
 | Widget tidak muncul | Cek Console. Biasanya `data-src` kosong, atau `music-player.css` gagal dimuat (path/CORS) |
 | Tampilan berantakan | CSS tidak termuat. Pastikan `.css` ada di folder yang sama dengan `.js`, atau pakai `data-css="URL"` |
 | Teks "Musik gagal dimuat" | URL audio salah, bukan link langsung ke file, atau format tak didukung browser (pakai `.mp3`) |
 | Musik tidak otomatis jalan | Normal — diblokir browser. Pengunjung cukup menekan Play |
-| Slider volume tidak ada di iPhone | Disengaja: iOS tidak mengizinkan JavaScript mengatur volume |
+| Slider volume tidak ada di iPhone | Disengaja: iOS tidak mengizinkan JavaScript mengatur volume (tombol mute tetap ada) |
 | Menutupi tombol chat/WhatsApp | Ubah `data-position`, atau naikkan `--fmw-oy` |
 
 ## Lisensi

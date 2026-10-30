@@ -1,11 +1,15 @@
 /*!
- * Floating Music Widget v1.0.0
+ * Floating Music Widget v1.1.0
  * Vanilla JS, tanpa dependensi. Memuat music-player.css otomatis.
  *
- * Pasang:
- *   <script src="https://cdn.jsdelivr.net/gh/USER/REPO@v1.0.0/music-player.js"
- *           data-src="https://example.com/lagu.mp3"
- *           data-title="Judul Lagu" data-artist="Nama Artis" defer></script>
+ * Pasang (cukup satu baris, 3 lagu bawaan ikut otomatis):
+ *   <script src="https://cdn.jsdelivr.net/gh/fixsarts/MusicWidgets@main/music-player.js" defer></script>
+ *
+ * Satu lagu saja:
+ *   <script src=".../music-player.js" data-src="lagu.mp3" data-title="Judul" data-artist="Artis" defer></script>
+ *
+ * Path relatif (tanpa http / tanpa "/" di depan) dibaca RELATIF TERHADAP LOKASI music-player.js,
+ * bukan terhadap website yang memasang. Itu yang membuat widget portable.
  */
 (function (window, document) {
   'use strict';
@@ -14,7 +18,7 @@
   if (window.__FMW_LOADED__ || document.getElementById('fmw-host')) { return; }
   window.__FMW_LOADED__ = true;
 
-  var VERSION = '1.0.0';
+  var VERSION = '1.1.0';
   var STORE_KEY = 'fmw:v1';
 
   // document.currentScript harus dibaca sinkron (sebelum ada callback async)
@@ -32,11 +36,24 @@
    * Konfigurasi
    * Prioritas: data-attribute pada <script>  >  window.FMWConfig  >  default
    * ------------------------------------------------------------------ */
+
+  // Playlist bawaan. Dipakai kalau data-src / data-tracks / FMWConfig.tracks tidak diisi.
+  // "file" dibaca relatif terhadap folder music-player.js  (→ ./Assets/Musik/<file>)
+  var DEFAULT_DIR = 'Assets/Musik/';
+  var DEFAULT_TRACKS = [
+    { file: 'One Of The Girls X Good For You.mp3', title: 'One Of The Girls x Good For You', artist: '' },
+    { file: 'Ariana Grande - bye [Altare Remix].mp3', title: 'bye', artist: 'Ariana Grande - Altare Remix' },
+    { file: 'Game of Thrones.mp3', title: 'Game of Thrones', artist: 'Game Of Thrones' }
+  ];
+
   var DEFAULTS = {
-    src: '',
-    title: 'Untitled',
+    src: '',                    // satu lagu (opsional)
+    tracks: null,               // playlist: [{src,title,artist,cover}, ...] (opsional)
+    title: '',
     artist: '',
     cover: '',
+    base: 'script',             // script | page | URL → acuan untuk path relatif
+    repeat: 'all',              // all = putar berurutan | one = ulangi lagu ini
     position: 'bottom-right',   // bottom-right | bottom-left | top-right | top-left
     offsetX: null,              // jarak dari tepi, mis. 20 atau "1.5rem"
     offsetY: null,
@@ -44,12 +61,12 @@
     width: null,                // lebar card, default 300px
     volume: 0.35,               // 0 - 1
     autoplay: true,
-    loop: true,
+    loop: true,                 // hanya untuk mode 1 lagu
     initialState: 'open',       // open | minimized | closed
     mobileState: null,          // state awal khusus layar <= 480px (opsional)
     closeBehavior: 'launcher',  // launcher = tampil ikon kecil | remove = hapus total
     playOnReopen: true,         // putar lagi saat ikon musik ditekan setelah Close
-    remember: 'session',        // session | local | none  (ingat minimize/close/pause)
+    remember: 'session',        // session | local | none  (ingat minimize/close/pause/lagu)
     delay: 350,                 // jeda (ms) sebelum widget slide-in
     preload: 'metadata',
     css: 'auto',                // auto | none | URL stylesheet
@@ -57,6 +74,10 @@
       region: 'Pemutar musik',
       play: 'Putar',
       pause: 'Jeda',
+      next: 'Lagu berikutnya',
+      prev: 'Lagu sebelumnya',
+      repeatAll: 'Putar berurutan (ketuk untuk ulangi lagu ini)',
+      repeatOne: 'Ulangi lagu ini (ketuk untuk putar berurutan)',
       minimize: 'Kecilkan',
       expand: 'Perbesar',
       close: 'Tutup pemutar',
@@ -94,6 +115,10 @@
     return 'open';
   }
 
+  /* ---------- URL: relatif → mutlak ---------- */
+  var scriptUrl = null;
+  try { if (scriptEl && scriptEl.src) { scriptUrl = new URL(scriptEl.src, window.location.href).href; } } catch (e) { /* abaikan */ }
+
   function buildConfig() {
     var c = {}, k;
     for (k in DEFAULTS) { c[k] = DEFAULTS[k]; }
@@ -107,11 +132,15 @@
     if (user && user.labels) { for (k in user.labels) { c.labels[k] = user.labels[k]; } }
 
     var d = (scriptEl && scriptEl.dataset) || {};
-    var textKeys = ['src', 'title', 'artist', 'cover', 'position', 'initialState',
+    var textKeys = ['src', 'title', 'artist', 'cover', 'position', 'initialState', 'base', 'repeat',
       'mobileState', 'closeBehavior', 'remember', 'css', 'preload', 'offsetX', 'offsetY', 'zIndex', 'width'];
     textKeys.forEach(function (key) {
       if (d[key] !== undefined && d[key] !== '') { c[key] = d[key]; }
     });
+    if (d.tracks) {
+      try { c.tracks = JSON.parse(d.tracks); }
+      catch (e) { console.error('[FMW] data-tracks bukan JSON yang valid.', e); }
+    }
     if (d.volume !== undefined) { c.volume = d.volume; }
     if (d.delay !== undefined) { c.delay = d.delay; }
     ['autoplay', 'loop', 'playOnReopen'].forEach(function (key) {
@@ -124,6 +153,7 @@
     c.autoplay = toBool(c.autoplay, true);
     c.loop = toBool(c.loop, true);
     c.playOnReopen = toBool(c.playOnReopen, true);
+    c.repeat = String(c.repeat).toLowerCase() === 'one' ? 'one' : 'all';
     c.closeBehavior = String(c.closeBehavior).toLowerCase() === 'remove' ? 'remove' : 'launcher';
     c.remember = /^(local|none)$/i.test(c.remember) ? String(c.remember).toLowerCase() : 'session';
     c.initialState = normState(c.initialState);
@@ -137,8 +167,65 @@
 
   var cfg = buildConfig();
 
-  if (!cfg.src) {
-    console.error('[FMW] Atribut data-src (URL musik) belum diisi. Widget tidak dibuat.');
+  // Acuan path relatif: lokasi script (default), halaman, atau URL custom
+  var baseUrl = (function () {
+    var b = String(cfg.base || 'script');
+    if (b === 'page') { return window.location.href; }
+    if (b !== 'script') {
+      try { return new URL(b, window.location.href).href; } catch (e) { /* lanjut */ }
+    }
+    return scriptUrl || window.location.href;
+  })();
+
+  function resolveUrl(u, forceBase) {
+    u = String(u == null ? '' : u).trim();
+    if (!u) { return ''; }
+    try {
+      // absolut (http:, data:, blob:...), "//host/..", atau "/path" → ikut halaman
+      if (/^([a-z][a-z0-9+.\-]*:|\/)/i.test(u)) { return new URL(u, window.location.href).href; }
+      return new URL(u, forceBase || baseUrl).href;
+    } catch (e) { return u; }
+  }
+
+  function titleFromUrl(u) {
+    try {
+      var name = decodeURIComponent(String(u).split(/[?#]/)[0].split('/').pop() || '');
+      return name.replace(/\.[a-z0-9]{2,5}$/i, '') || 'Untitled';
+    } catch (e) { return 'Untitled'; }
+  }
+
+  function normTrack(t, isDefault) {
+    if (typeof t === 'string') { t = { src: t }; }
+    t = t || {};
+    var src;
+    if (isDefault && t.file) {
+      // nama file bisa berisi spasi/kurung → encode per bagian
+      src = resolveUrl(DEFAULT_DIR + encodeURIComponent(t.file), scriptUrl || window.location.href);
+    } else {
+      src = resolveUrl(t.src);
+    }
+    return {
+      src: src,
+      title: t.title || titleFromUrl(src),
+      artist: t.artist || '',
+      cover: t.cover ? resolveUrl(t.cover) : ''
+    };
+  }
+
+  var tracks = (function () {
+    var list = [];
+    if (cfg.tracks && cfg.tracks.length) {
+      list = cfg.tracks.map(function (t) { return normTrack(t, false); });
+    } else if (cfg.src) {
+      list = [normTrack({ src: cfg.src, title: cfg.title, artist: cfg.artist, cover: cfg.cover }, false)];
+    } else {
+      list = DEFAULT_TRACKS.map(function (t) { return normTrack(t, true); });
+    }
+    return list.filter(function (t) { return !!t.src; });
+  })();
+
+  if (!tracks.length) {
+    console.error('[FMW] Tidak ada lagu. Isi data-src, data-tracks, atau window.FMWConfig.tracks.');
     window.__FMW_LOADED__ = false;
     return;
   }
@@ -178,10 +265,10 @@
       var manualLink = document.querySelector('link[data-fmw-css], link[rel~="stylesheet"][href*="music-player.css"]');
       return manualLink ? manualLink.href : null;
     }
-    if (css !== 'auto') { return css; }
-    if (scriptEl && scriptEl.src) {
+    if (css !== 'auto') { return resolveUrl(css, scriptUrl || window.location.href); }
+    if (scriptUrl) {
       try {
-        var u = new URL(scriptEl.src, window.location.href);
+        var u = new URL(scriptUrl);
         u.pathname = u.pathname.replace(/\.js$/i, '.css');
         u.hash = '';
         return u.href;
@@ -231,9 +318,10 @@
       t.style.color = color;
       if (!t.style.color) { return null; }
       t.style.display = 'none';
-      document.body.appendChild(t);
+      var parent = document.body || document.documentElement;
+      parent.appendChild(t);
       var c = getComputedStyle(t).color;
-      document.body.removeChild(t);
+      parent.removeChild(t);
       var m = c.match(/\d+(\.\d+)?/g);
       if (!m || m.length < 3) { return null; }
       return [Math.round(m[0]), Math.round(m[1]), Math.round(m[2])];
@@ -243,6 +331,10 @@
   var ICONS = {
     play: '<svg class="fmw-i-play" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 5.14v13.72a1 1 0 0 0 1.52.85l11-6.86a1 1 0 0 0 0-1.7l-11-6.86A1 1 0 0 0 8 5.14z"/></svg>',
     pause: '<svg class="fmw-i-pause" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="6" y="4.5" width="4" height="15" rx="1.3" fill="currentColor"/><rect x="14" y="4.5" width="4" height="15" rx="1.3" fill="currentColor"/></svg>',
+    next: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 5.5 16 12 6 18.5z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M18.5 5.5v13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>',
+    prev: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g transform="translate(24 0) scale(-1 1)"><path d="M6 5.5 16 12 6 18.5z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M18.5 5.5v13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></g></svg>',
+    repeatAll: '<svg class="fmw-i-rall" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></g></svg>',
+    repeatOne: '<svg class="fmw-i-rone" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/><path d="M10.9 10.7 12.4 9.6v5.2" stroke-width="1.8"/></g></svg>',
     minimize: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 18h12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
     expand: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     close: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
@@ -274,10 +366,16 @@
     host.id = 'fmw-host';
     host.style.setProperty('all', 'initial', 'important');
     host.style.setProperty('position', 'fixed', 'important');
-    host.style.setProperty('inset', '0', 'important');
+    // Pakai longhand (bukan shorthand "inset"): setelah "all: initial" shorthand-nya tidak diterapkan
+    // di beberapa browser, sehingga host berukuran 0x0 dan isinya ikut salah posisi.
+    ['top', 'right', 'bottom', 'left'].forEach(function (side) { host.style.setProperty(side, '0', 'important'); });
+    host.style.setProperty('width', 'auto', 'important');
+    host.style.setProperty('height', 'auto', 'important');
     host.style.setProperty('z-index', cfg.zIndex === null ? '2147483000' : String(cfg.zIndex), 'important');
     host.style.setProperty('pointer-events', 'none', 'important');
-    document.body.appendChild(host);
+    // Dipasang di <html>, bukan <body>: kalau <body> website punya transform/filter/overflow,
+    // position:fixed tidak lagi menempel ke layar (penyebab widget "kepotong" di iPhone).
+    document.documentElement.appendChild(host);
     var shadowRoot = host.attachShadow({ mode: 'closed' });
 
     ensureCss(shadowRoot, function (ok) {
@@ -292,6 +390,7 @@
 
   function buildWidget(start, prefs, shadowRoot, host) {
     var L = cfg.labels;
+    var multi = tracks.length > 1;
 
     /* ---------- DOM ---------- */
     var root = document.createElement('div');
@@ -302,6 +401,8 @@
     root.setAttribute('data-state', 'init');
     root.setAttribute('data-playing', 'false');
     root.setAttribute('data-status', 'idle');
+    root.setAttribute('data-multi', multi ? 'true' : 'false');
+    root.setAttribute('data-repeat', cfg.repeat);
 
     root.innerHTML =
       '<div class="fmw-sr" role="status" aria-live="polite"></div>' +
@@ -318,15 +419,24 @@
             btn('fmw-ico', 'close', L.close, ICONS.close) +
           '</div>' +
         '</div>' +
-        '<div class="fmw-bottom">' +
-          btn('fmw-play', 'toggle', L.play, ICONS.play + ICONS.pause) +
-          '<div class="fmw-prog">' +
-            '<input class="fmw-range fmw-seek" type="range" min="0" max="1000" step="1" value="0" disabled aria-label="' + esc(L.seek) + '">' +
-            '<div class="fmw-times"><span class="fmw-cur">0:00</span><span class="fmw-dur">-:--</span></div>' +
+        '<div class="fmw-prog">' +
+          '<input class="fmw-range fmw-seek" type="range" min="0" max="1000" step="1" value="0" disabled aria-label="' + esc(L.seek) + '">' +
+          '<div class="fmw-times"><span class="fmw-cur">0:00</span><span class="fmw-dur">-:--</span></div>' +
+        '</div>' +
+        '<div class="fmw-controls">' +
+          '<div class="fmw-side fmw-side-l">' +
+            btn('fmw-ico fmw-multi-only fmw-repeat', 'repeat', L.repeatAll, ICONS.repeatAll + ICONS.repeatOne) +
           '</div>' +
-          '<div class="fmw-vol">' +
-            btn('fmw-ico', 'mute', L.mute, ICONS.vol + ICONS.muted) +
-            '<input class="fmw-range fmw-volume" type="range" min="0" max="100" step="1" value="35" aria-label="' + esc(L.volume) + '">' +
+          '<div class="fmw-main">' +
+            btn('fmw-ico fmw-skip fmw-multi-only', 'prev', L.prev, ICONS.prev) +
+            btn('fmw-play', 'toggle', L.play, ICONS.play + ICONS.pause) +
+            btn('fmw-ico fmw-skip fmw-multi-only', 'next', L.next, ICONS.next) +
+          '</div>' +
+          '<div class="fmw-side fmw-side-r">' +
+            '<div class="fmw-vol">' +
+              btn('fmw-ico', 'mute', L.mute, ICONS.vol + ICONS.muted) +
+              '<input class="fmw-range fmw-volume" type="range" min="0" max="100" step="1" value="35" aria-label="' + esc(L.volume) + '">' +
+            '</div>' +
           '</div>' +
         '</div>' +
       '</section>' +
@@ -334,6 +444,7 @@
       '<div class="fmw-mini fmw-glass" role="region" aria-label="' + esc(L.region) + '">' +
         btn('fmw-play', 'toggle', L.play, ICONS.play + ICONS.pause) +
         EQ +
+        btn('fmw-ico fmw-multi-only', 'next', L.next, ICONS.next) +
         btn('fmw-ico', 'expand', L.expand, ICONS.expand) +
         btn('fmw-ico', 'close', L.close, ICONS.close) +
       '</div>' +
@@ -359,10 +470,7 @@
     var durEl = $('.fmw-dur');
     var toggles = root.querySelectorAll('[data-fmw="toggle"]');
     var muteBtn = $('[data-fmw="mute"]');
-
-    titleEl.textContent = cfg.title;
-    titleEl.title = cfg.title;
-    applyCover(cfg.cover);
+    var repeatBtn = $('[data-fmw="repeat"]');
 
     /* ---------- Kontras & posisi ---------- */
     shadowRoot.appendChild(root);
@@ -378,24 +486,67 @@
     if (zi) { root.style.setProperty('--fmw-z', String(cfg.zIndex)); }
     if (w) { root.style.setProperty('--fmw-w', w); }
 
-    /* ---------- Audio ---------- */
+    /* ---------- Posisi mengikuti layar yang benar-benar terlihat ----------
+     * Di iPhone, kalau halaman lebih lebar dari layar (ada elemen yang overflow),
+     * viewport layout jadi lebih lebar dari area yang terlihat dan elemen fixed menempel ke
+     * tepi viewport layout → pojok kanan-bawah kepotong. Saat itu terjadi, kotak widget
+     * disamakan dengan area yang benar-benar terlihat (visualViewport).
+     * Saat pengunjung zoom-in sendiri (scale > 1) tidak diubah. */
+    var vv = window.visualViewport;
+    function syncViewport() {
+      if (!vv) { return; }
+      var s = host.style;
+      // layout viewport lebih lebar dari area yang terlihat (> lebar scrollbar) = halaman overflow
+      var mismatch = (window.innerWidth - vv.width) > 24;
+      if (vv.scale <= 1.01 && (vv.scale < 0.99 || mismatch)) {
+        s.setProperty('left', vv.offsetLeft + 'px', 'important');
+        s.setProperty('top', vv.offsetTop + 'px', 'important');
+        s.setProperty('right', 'auto', 'important');
+        s.setProperty('bottom', 'auto', 'important');
+        s.setProperty('width', vv.width + 'px', 'important');
+        s.setProperty('height', vv.height + 'px', 'important');
+      } else {
+        ['top', 'right', 'bottom', 'left'].forEach(function (side) { s.setProperty(side, '0', 'important'); });
+        s.setProperty('width', 'auto', 'important');
+        s.setProperty('height', 'auto', 'important');
+      }
+    }
+    if (vv) {
+      vv.addEventListener('resize', syncViewport);
+      vv.addEventListener('scroll', syncViewport);
+      window.addEventListener('resize', syncViewport);
+      syncViewport();
+    }
+
+    /* ---------- Audio & playlist ---------- */
     var audio = new Audio();
     audio.preload = cfg.preload;
-    audio.loop = cfg.loop;
     audio.volume = cfg.volume;
-    audio.src = cfg.src;
 
-    // iOS Safari mengabaikan audio.volume → sembunyikan slider volume bila tidak didukung
+    // iOS Safari mengabaikan audio.volume → sembunyikan hanya slider-nya (tombol mute tetap ada)
     if (Math.abs(audio.volume - cfg.volume) > 0.01) { root.setAttribute('data-novol', 'true'); }
+
+    var idx = 0;
+    if (multi && typeof prefs.index === 'number' && prefs.index >= 0 && prefs.index < tracks.length) { idx = prefs.index; }
+    var repeat = cfg.repeat;
+    if (multi && (prefs.repeat === 'one' || prefs.repeat === 'all')) { repeat = prefs.repeat; }
 
     var state = 'init';
     var playing = false;
     var status = 'idle';
     var dragging = false;
     var destroyed = false;
+    var wantPlay = false;   // pengunjung/konfigurasi ingin musik berjalan (dipakai saat pindah lagu)
+    var errStreak = 0;
+    var started = false;
     var timers = [];
 
     function later(fn, ms) { var t = setTimeout(fn, ms); timers.push(t); return t; }
+    function cur() { return tracks[idx]; }
+
+    function applyLoop() {
+      audio.loop = multi ? (repeat === 'one') : cfg.loop;
+    }
 
     /* ---------- Render ---------- */
     function announce(msg) { srEl.textContent = ''; later(function () { srEl.textContent = msg; }, 30); }
@@ -405,7 +556,7 @@
       if (status === 'blocked') { text = L.blocked; }
       else if (status === 'loading') { text = L.loading; }
       else if (status === 'error') { text = L.error; }
-      else { text = cfg.artist || (playing ? L.playing : L.paused); }
+      else { text = cur().artist || (playing ? L.playing : L.paused); }
       subTextEl.textContent = text;
     }
     function setStatus(s) {
@@ -422,6 +573,13 @@
         toggles[i].title = label;
       }
       renderSub();
+    }
+    function renderRepeat() {
+      root.setAttribute('data-repeat', repeat);
+      var lbl = repeat === 'one' ? L.repeatOne : L.repeatAll;
+      repeatBtn.setAttribute('aria-label', lbl);
+      repeatBtn.setAttribute('aria-pressed', repeat === 'one' ? 'true' : 'false');
+      repeatBtn.title = lbl;
     }
     function setFill(r) {
       var min = parseFloat(r.min) || 0, max = parseFloat(r.max) || 100;
@@ -453,6 +611,14 @@
       if (url) { coverEl.style.backgroundImage = 'url("' + String(url).replace(/(["\\])/g, '\\$1') + '")'; }
       else { coverEl.style.backgroundImage = ''; }
     }
+    function renderTrack() {
+      var t = cur();
+      titleEl.textContent = t.title;
+      titleEl.title = t.title;
+      applyCover(t.cover);
+      renderSub();
+      if (started) { setupMediaSession(); }
+    }
 
     /* ---------- State tampilan: open | min | closed ---------- */
     function setState(next, focusSel, silent) {
@@ -468,6 +634,7 @@
     /* ---------- Kontrol audio ---------- */
     function play(byUser) {
       if (destroyed) { return; }
+      wantPlay = true;
       if (byUser) { savePrefs({ paused: false }); }
       if (audio.error) { audio.load(); } // coba muat ulang setelah error
       var p;
@@ -488,6 +655,7 @@
       }
     }
     function pause(byUser) {
+      wantPlay = false;
       if (byUser) { savePrefs({ paused: true }); }
       try { audio.pause(); } catch (e) { /* abaikan */ }
     }
@@ -495,11 +663,46 @@
       if (audio.paused || audio.ended) { play(true); } else { pause(true); }
     }
 
+    // Pindah lagu. Lagu baru dimuat; diputar jika doPlay = true.
+    function go(i, doPlay) {
+      if (destroyed) { return; }
+      idx = ((i % tracks.length) + tracks.length) % tracks.length;
+      savePrefs({ index: idx });
+      playing = false;
+      setStatus('idle');
+      audio.src = cur().src;
+      applyLoop();
+      renderTrack();
+      renderPlaying();
+      renderDuration();
+      renderTime();
+      if (doPlay) { play(false); } else { wantPlay = false; }
+    }
+    function next(byUser) {
+      if (!multi) { return; }
+      if (byUser) { savePrefs({ paused: false }); }
+      go(idx + 1, byUser ? true : wantPlay);
+    }
+    function prev() {
+      if (!multi) { return; }
+      // Seperti pemutar pada umumnya: >3 detik → ulang dari awal; selain itu lagu sebelumnya
+      if ((audio.currentTime || 0) > 3) { audio.currentTime = 0; renderTime(); return; }
+      savePrefs({ paused: false });
+      go(idx - 1, true);
+    }
+    function setRepeat(mode) {
+      repeat = mode === 'one' ? 'one' : 'all';
+      savePrefs({ repeat: repeat });
+      applyLoop();
+      renderRepeat();
+    }
+
     function minimize() { setState('min', '.fmw-mini [data-fmw="expand"]'); }
     function expand() { setState('open', '.fmw-card [data-fmw="toggle"]'); }
 
     // Close = musik BERHENTI. Minimize = musik tetap jalan.
     function close() {
+      wantPlay = false;
       try { audio.pause(); audio.currentTime = 0; } catch (e) { /* abaikan */ }
       setStatus('idle');
       renderTime();
@@ -521,6 +724,11 @@
       if (destroyed) { return; }
       destroyed = true;
       timers.forEach(clearTimeout);
+      if (vv) {
+        vv.removeEventListener('resize', syncViewport);
+        vv.removeEventListener('scroll', syncViewport);
+        window.removeEventListener('resize', syncViewport);
+      }
       try { audio.pause(); audio.removeAttribute('src'); audio.load(); } catch (e) { /* abaikan */ }
       clearMediaSession();
       if (host.parentNode) { host.parentNode.removeChild(host); }
@@ -528,52 +736,59 @@
       window.__FMW_LOADED__ = false;
     }
 
+    // Ubah info/sumber lagu yang sedang aktif (kompatibel dengan versi 1.0)
     function setTrack(t) {
       t = t || {};
       var wasPlaying = playing;
-      if (t.title !== undefined) { cfg.title = t.title; titleEl.textContent = t.title; titleEl.title = t.title; }
-      if (t.artist !== undefined) { cfg.artist = t.artist; }
-      if (t.cover !== undefined) { cfg.cover = t.cover; applyCover(t.cover); }
+      var tr = cur();
+      if (t.title !== undefined) { tr.title = t.title; }
+      if (t.artist !== undefined) { tr.artist = t.artist; }
+      if (t.cover !== undefined) { tr.cover = resolveUrl(t.cover); }
       if (t.src) {
-        cfg.src = t.src;
+        tr.src = resolveUrl(t.src);
         setStatus('idle');
-        audio.src = t.src;
-        audio.load();
+        audio.src = tr.src;
         renderDuration();
         renderTime();
         if (wasPlaying) { play(false); }
       }
-      renderSub();
+      renderTrack();
     }
 
     /* ---------- Media Session (kontrol dari lock-screen / keyboard media) ---------- */
     function setupMediaSession() {
       if (!('mediaSession' in navigator)) { return; }
       try {
+        var t = cur();
         navigator.mediaSession.metadata = new window.MediaMetadata({
-          title: cfg.title,
-          artist: cfg.artist,
-          artwork: cfg.cover ? [{ src: cfg.cover }] : []
+          title: t.title,
+          artist: t.artist,
+          artwork: t.cover ? [{ src: t.cover }] : []
         });
         navigator.mediaSession.setActionHandler('play', function () { play(true); });
         navigator.mediaSession.setActionHandler('pause', function () { pause(true); });
+        navigator.mediaSession.setActionHandler('nexttrack', multi ? function () { next(true); } : null);
+        navigator.mediaSession.setActionHandler('previoustrack', multi ? function () { prev(); } : null);
       } catch (e) { /* abaikan */ }
     }
     function clearMediaSession() {
       if (!('mediaSession' in navigator)) { return; }
       try {
-        navigator.mediaSession.setActionHandler('play', null);
-        navigator.mediaSession.setActionHandler('pause', null);
+        ['play', 'pause', 'nexttrack', 'previoustrack'].forEach(function (a) {
+          navigator.mediaSession.setActionHandler(a, null);
+        });
       } catch (e) { /* abaikan */ }
     }
 
     /* ---------- Event audio ---------- */
     audio.addEventListener('playing', function () {
       playing = true;
+      started = true;
+      errStreak = 0;
       setStatus('idle');
       renderPlaying();
       setupMediaSession();
-      announce(L.playing + ': ' + cfg.title);
+      announce(L.playing + ': ' + cur().title);
     });
     audio.addEventListener('pause', function () {
       playing = false;
@@ -586,12 +801,22 @@
     audio.addEventListener('loadedmetadata', renderDuration);
     audio.addEventListener('durationchange', renderDuration);
     audio.addEventListener('volumechange', renderVolume);
-    audio.addEventListener('ended', function () { playing = false; renderPlaying(); renderTime(); });
+    audio.addEventListener('ended', function () {
+      // Mode berurutan: lanjut ke lagu berikutnya (kembali ke awal setelah lagu terakhir)
+      if (multi && repeat === 'all') { go(idx + 1, true); return; }
+      playing = false;
+      renderPlaying();
+      renderTime();
+    });
     audio.addEventListener('error', function () {
       playing = false;
       renderPlaying();
       setStatus('error');
       announce(L.error);
+      // File lagu ini gagal dimuat → lompat ke lagu berikutnya (berhenti kalau semuanya gagal)
+      if (multi && wantPlay && ++errStreak < tracks.length) {
+        later(function () { go(idx + 1, true); }, 700);
+      }
     });
 
     /* ---------- Event UI ---------- */
@@ -600,6 +825,9 @@
       if (!t || !root.contains(t)) { return; }
       switch (t.getAttribute('data-fmw')) {
         case 'toggle': toggle(); break;
+        case 'next': next(true); break;
+        case 'prev': prev(); break;
+        case 'repeat': setRepeat(repeat === 'one' ? 'all' : 'one'); break;
         case 'min': minimize(); break;
         case 'expand': expand(); break;
         case 'close': close(); break;
@@ -631,11 +859,14 @@
     });
 
     /* ---------- Pasang ke halaman ---------- */
+    audio.src = cur().src;
+    applyLoop();
+    renderTrack();
+    renderRepeat();
     renderPlaying();
     renderDuration();
     renderTime();
     renderVolume();
-    renderSub();
 
     // Tampil dengan animasi slide-in (setelah style awal terbaca browser)
     var shown = false;
@@ -660,6 +891,10 @@
       play: function () { play(true); },
       pause: function () { pause(true); },
       toggle: toggle,
+      next: function () { next(true); },
+      prev: prev,
+      goTo: function (i) { go(toNum(i, 0), true); },
+      setRepeat: setRepeat,
       minimize: minimize,
       expand: expand,
       open: open,
@@ -667,7 +902,9 @@
       destroy: destroy,
       setTrack: setTrack,
       get isPlaying() { return playing; },
-      get state() { return state; }
+      get state() { return state; },
+      get index() { return idx; },
+      get repeat() { return repeat; }
     };
   }
 

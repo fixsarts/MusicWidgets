@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Demo — Floating Music Widget</title>
   <style>
     body { margin: 0; font: 16px/1.7 system-ui, sans-serif; background: #f3f1ee; color: #222; }
@@ -26,36 +26,24 @@
   </main>
   <footer>Footer website contoh</footer>
 
-  <!-- Cukup satu baris ini untuk memasang widget -->
+  <!-- Cukup satu baris ini. Ketiga lagu di Assets/Musik ikut otomatis (Next / Prev / Ulangi). -->
+  <script src="./music-player.js" defer></script>
 
-  <!--  
-<script
-  src="./music-player.js"
-  data-src="./Assets/Musik/Ariana%20Grande%20-%20bye%20%5BAltare%20Remix%5D.mp3"
-  data-title="bye"
-  data-artist="Ariana Grande - Altare Remix"
-  defer>
-</script>
+  <!-- Contoh: satu lagu saja (tanpa tombol Next/Prev/Ulangi)
+  <script
+    src="./music-player.js"
+    data-src="./Assets/Musik/Game%20of%20Thrones.mp3"
+    data-title="Game of Thrones"
+    data-artist="Game Of Thrones"
+    defer></script>
   -->
 
-<script
-  src="./music-player.js"
-  data-src="./Assets/Musik/One%20Of%20The%20Girls%20X%20Good%20For%20You.mp3"
-  data-title="One Of The Girls x Good For You"
-  data-artist="One Of The Girls X Good For You"
-  defer>
-</script>
-
-    <!--
-<script
-  src="./music-player.js"
-  data-src="./Assets/Musik/Game%20of%20Thrones.mp3"
-  data-title="GoT"
-  data-artist="Game Of Thrones"
-  defer>
-</script>
+  <!-- Contoh: playlist sendiri
+  <script
+    src="./music-player.js"
+    data-tracks='[{"src":"Assets/Musik/Game of Thrones.mp3","title":"GoT"},{"src":"https://situsku.com/lagu.mp3","title":"Lagu lain"}]'
+    defer></script>
   -->
 
-  
 </body>
 </html>
